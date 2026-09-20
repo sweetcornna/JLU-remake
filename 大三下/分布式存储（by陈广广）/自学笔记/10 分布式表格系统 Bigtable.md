@@ -448,7 +448,7 @@ Bigtable 每个子表的数据分为内存中的 MemTable 和 GFS 中的多个 S
 | --- | --- | --- | --- |
 | 数据怎么分布 | 文件切 64MB chunk，Master 决定放哪 | 一致性哈希加虚拟节点 | 按 row key 顺序切 100 到 200MB 子表 |
 | 副本怎么放 | 3 副本，跨机架 | N 副本，顺时针 N 个节点 | 服务层单副本，持久化层交给 GFS 的 3 副本 |
-| 一致性 | 弱，追加至少成功一次，可能重复和 padding | 最终一致，$W+R>N$ 保证读到最新版本之一 | 强一致，Chubby 互斥锁保证一个子表只有一个服务者 |
+| 一致性 | 弱，追加至少成功一次，可能重复和 padding | 最终一致， $W+R>N$ 保证读到最新版本之一 | 强一致，Chubby 互斥锁保证一个子表只有一个服务者 |
 | 故障怎么恢复 | Master 靠日志加 checkpoint 加影子；chunk 靠副本补齐 | Hinted Handoff 加 Merkle 树同步加读取修复 | Chubby 锁判活，子表重新分配加回放日志 |
 | 负载怎么均衡 | Master 调整副本位置 | 调整虚拟节点 token 分配 | Master 迁移子表，两次 Minor Compaction 减少停服 |
 

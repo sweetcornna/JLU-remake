@@ -154,7 +154,7 @@ $$\Pi_{name,\ course\_id}(student \bowtie takes) \div \Pi_{course\_id}(\sigma_{n
 
 `student` 和 `takes` 只有 `ID` 同名，`instructor` 和 `teaches` 也只有 `ID` 同名，两个自然连接都没问题。被除数投影成 `(name, course_id)`，除数是 `(course_id)`，商是 `name`。
 
-SQL（原答案思路：$A \div B$ 就是 `not exists (B except A)`，$B - A$ 为空说明 $B \subseteq A$）：
+SQL（原答案思路： $A \div B$ 就是 `not exists (B except A)`， $B - A$ 为空说明 $B \subseteq A$）：
 
 ```sql
 select S.name

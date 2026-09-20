@@ -22,7 +22,7 @@
 > ZB: Zettabyte; 1ZB=10EB; 1EB=10PB; 1PB=10TB;
 > 1ZB=10 Byte
 
-（更正：原文作 `1ZB=10EB; 1EB=10PB; 1PB=10TB`，换算系数写错了。二进制下 $1\mathrm{ZB}=1024\mathrm{EB}$、$1\mathrm{EB}=1024\mathrm{PB}$、$1\mathrm{PB}=1024\mathrm{TB}$，十进制下是 1000 倍。原文 `1ZB=10 Byte` 掉了指数，应为 $1\mathrm{ZB}=10^{21}\ \mathrm{Byte}$。）
+（更正：原文作 `1ZB=10EB; 1EB=10PB; 1PB=10TB`，换算系数写错了。二进制下 $1\mathrm{ZB}=1024\mathrm{EB}$、 $1\mathrm{EB}=1024\mathrm{PB}$、 $1\mathrm{PB}=1024\mathrm{TB}$，十进制下是 1000 倍。原文 `1ZB=10 Byte` 掉了指数，应为 $1\mathrm{ZB}=10^{21}\ \mathrm{Byte}$。）
 
 这么多数据对传输、存储、计算全提出了挑战，传统的机器和软件已经远不足以处理。所以面向大数据的数据中心，以及跑在上面的各种软件，成了热门话题。
 
@@ -381,7 +381,7 @@ job.setCombinerClass(IntSumReducer.class);
 // IntSumReducer 是稍后编写的 Reducer，这里相当于先在 Map 本地进行了一次 Reduce
 ```
 
-**需要多少个 Map？** Map 的数量一般由输入的大小（也就是有多少个输入块）决定。比如有 10TB 的输入，块大小（blocksize）是 128MB，就有约 82000 个 map 要运行。（核对过：$10 \times 1024 \times 1024 / 128 = 81920$，和原稿的"约 82000"一致。）
+**需要多少个 Map？** Map 的数量一般由输入的大小（也就是有多少个输入块）决定。比如有 10TB 的输入，块大小（blocksize）是 128MB，就有约 82000 个 map 要运行。（核对过： $10 \times 1024 \times 1024 / 128 = 81920$，和原稿的"约 82000"一致。）
 
 ### 7.4 Reducer
 

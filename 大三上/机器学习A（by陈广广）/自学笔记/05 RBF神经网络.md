@@ -6,9 +6,9 @@
 
 - 考试知识点原文：（正则化）RBF 神经网络的结构及插值描述、广义 RBF 神经网络结构、学习方法。
 - RBF 网络固定三层：输入层只传递信号；隐层用**径向基函数**（通常是高斯函数）做非线性变换，具有局部特性；输出层对隐层输出**线性加权**。
-- 插值描述：$P$ 个样本各放一个基函数，解线性方程组 $\Phi W=d$ 得到权值。这种隐节点数等于样本数的网络就是正则化 RBF 网络。
+- 插值描述： $P$ 个样本各放一个基函数，解线性方程组 $\Phi W=d$ 得到权值。这种隐节点数等于样本数的网络就是正则化 RBF 网络。
 - 广义 RBF 网络：隐节点数 $M$ 远小于样本数 $P$，中心不必落在样本上，各基函数宽度可以不同，输出带阈值。
-- 学习方法要记三类参数怎么定：**中心**（从样本选、k-means/SOM 聚类、监督学习）、**扩展常数**（$\delta=d_{max}/\sqrt{2M}$ 或按最近中心距离取）、**输出权值**（LMS 或伪逆）。
+- 学习方法要记三类参数怎么定：**中心**（从样本选、k-means/SOM 聚类、监督学习）、**扩展常数**（ $\delta=d_{max}/\sqrt{2M}$ 或按最近中心距离取）、**输出权值**（LMS 或伪逆）。
 - 和多层感知器比：RBF 用超球体划分、局部逼近、学得快、一般只有一个隐层；MLP 用超平面划分、全局逼近。
 
 ## 概念与解释
@@ -23,15 +23,15 @@
 
 | 任务 | 形式 |
 | --- | --- |
-| 分类 | $l=f(\mathbf x)$，$\mathbf x\in X\subset\mathbb R^m$，$l\in C\subset\mathbb N$ |
-| 函数逼近（回归） | $\mathbf y=f(\mathbf x)$，$\mathbf x\in\mathbb R^n$，$\mathbf y\in\mathbb R^m$ |
+| 分类 | $l=f(\mathbf x)$， $\mathbf x\in X\subset\mathbb R^m$， $l\in C\subset\mathbb N$ |
+| 函数逼近（回归） | $\mathbf y=f(\mathbf x)$， $\mathbf x\in\mathbb R^n$， $\mathbf y\in\mathbb R^m$ |
 | 时间序列分析 | $\mathbf x(t)=f(\mathbf x_{t-1},\mathbf x_{t-2},\mathbf x_{t-3},\dots)$ |
 
 用于函数逼近时，网络输出是基函数的线性组合 $f(\mathbf x)=\sum_{i=1}^m w_i\phi_i(\mathbf x)$，隐单元起分解、特征提取、变换的作用。
 
 ### 径向基函数
 
-**定义**：取值只依赖于输入到原点的距离的函数，$\Phi(\mathbf x)=\Phi(\lVert\mathbf x\rVert)$；更一般地，依赖于到某个中心点 $\mathbf c$ 的距离，$\Phi(\mathbf x,\mathbf c)=\Phi(\lVert\mathbf x-\mathbf c\rVert)$。距离通常用欧氏距离（标准形式叫欧氏径向基函数），也可以用别的距离。
+**定义**：取值只依赖于输入到原点的距离的函数， $\Phi(\mathbf x)=\Phi(\lVert\mathbf x\rVert)$；更一般地，依赖于到某个中心点 $\mathbf c$ 的距离， $\Phi(\mathbf x,\mathbf c)=\Phi(\lVert\mathbf x-\mathbf c\rVert)$。距离通常用欧氏距离（标准形式叫欧氏径向基函数），也可以用别的距离。
 
 径向基函数 $\Phi(\lVert\mathbf x-\mathbf c\rVert)$ 有三个要素：中心 $\mathbf c$、距离度量 $r=\lVert\mathbf x-\mathbf c\rVert$、形状 $\phi$。
 
@@ -41,9 +41,9 @@ $$
 \phi(\lVert\mathbf x-\mathbf x_c\rVert)=\exp\Big(-\frac{\lVert\mathbf x-\mathbf x_c\rVert^2}{2\sigma^2}\Big)
 $$
 
-$\mathbf x_c$ 是中心，$\sigma$ 是宽度参数，控制函数的径向作用范围：$\sigma$ 越小，函数越"尖"，只对离中心很近的输入有明显响应。
+$\mathbf x_c$ 是中心， $\sigma$ 是宽度参数，控制函数的径向作用范围： $\sigma$ 越小，函数越"尖"，只对离中心很近的输入有明显响应。
 
-常见的径向基函数（$r=\lVert\mathbf x-\mathbf c\rVert$）。课件有两种写法，一种用形状参数 $\varepsilon$，一种用宽度 $\delta$：
+常见的径向基函数（ $r=\lVert\mathbf x-\mathbf c\rVert$）。课件有两种写法，一种用形状参数 $\varepsilon$，一种用宽度 $\delta$：
 
 | 名称 | 用 $\varepsilon$ 写 | 用 $\delta$ 写 |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ $\mathbf x_c$ 是中心，$\sigma$ 是宽度参数，控制函数的径向作用
 
 （更正：原文反演 S 型函数写作 $\frac{1}{1+\exp(-r^2/\delta^2)}$，这样函数随 $r$ 增大而增大，没有"反演"的意思；应为 $\exp(+r^2/\delta^2)$，在 $r=0$ 处取最大值 1/2，随距离增大衰减到 0。）
 
-$\varepsilon$ 越大，高斯函数衰减越快（课件图中 $\varepsilon=0.1$ 几乎是水平线，$\varepsilon=10$ 是一根尖峰）。
+$\varepsilon$ 越大，高斯函数衰减越快（课件图中 $\varepsilon=0.1$ 几乎是水平线， $\varepsilon=10$ 是一根尖峰）。
 
 ### RBF 网络的结构
 
@@ -71,8 +71,8 @@ RBF 网络是以径向基函数作为激活函数的人工神经网络，输出�
 
 同一结构的两种用法：
 
-- 函数逼近：$f(\mathbf x)=\sum_{m}w_m\phi(\lVert\mathbf x-\mathbf x_m\rVert)$，输出单元线性，做插值；隐单元做投影。
-- 分类：$f(\mathbf x)=\sum_m w_m\phi(\lVert\mathbf x-\mathbf c_m\rVert)$，输出单元可以接 S 型函数做分类，隐单元对应"子类"。
+- 函数逼近： $f(\mathbf x)=\sum_{m}w_m\phi(\lVert\mathbf x-\mathbf x_m\rVert)$，输出单元线性，做插值；隐单元做投影。
+- 分类： $f(\mathbf x)=\sum_m w_m\phi(\lVert\mathbf x-\mathbf c_m\rVert)$，输出单元可以接 S 型函数做分类，隐单元对应"子类"。
 
 ### RBF 网络和经典神经网络的区别
 
@@ -98,8 +98,8 @@ $$
 **用径向基函数解插值问题**：
 
 1. 选 $P$ 个基函数，每个对应一个训练样本，形式为 $\phi(\lVert\mathbf x-\mathbf x_p\rVert)$。自变量是 $\mathbf x$ 到中心 $\mathbf x_p$ 的距离，距离径向对称，所以叫径向基函数。
-2. 插值函数取基函数的线性组合：$F(\mathbf x)=\sum_{p=1}^P w_p\,\phi(\lVert\mathbf x-\mathbf x_p\rVert)$。
-3. 代入插值条件，得到关于 $w_p$ 的 $P$ 阶线性方程组：$\sum_{p=1}^P w_p\,\phi(\lVert\mathbf x_i-\mathbf x_p\rVert)=d_i$，$i=1,\dots,P$。
+2. 插值函数取基函数的线性组合： $F(\mathbf x)=\sum_{p=1}^P w_p\,\phi(\lVert\mathbf x-\mathbf x_p\rVert)$。
+3. 代入插值条件，得到关于 $w_p$ 的 $P$ 阶线性方程组： $\sum_{p=1}^P w_p\,\phi(\lVert\mathbf x_i-\mathbf x_p\rVert)=d_i$， $i=1,\dots,P$。
 4. 记 $\phi_{ip}=\phi(\lVert\mathbf x_i-\mathbf x_p\rVert)$，写成矩阵形式：
 
 $$
@@ -119,18 +119,18 @@ $\Phi$ 叫插值矩阵，可逆时 $W=\Phi^{-1}\mathbf d$。
 
 解决办法是加正则化项限制模型复杂度（或用交叉验证选复杂度），或者改用隐节点更少的广义 RBF 网络。（更正：原文说正则化 RBF 网络和广义 RBF 网络都"通过减少隐神经元的数量"避免完全内插的问题。正则化 RBF 网络的隐节点数仍等于样本数，它靠正则化项改善泛化；减少隐节点数的是广义 RBF 网络。）
 
-整理补充：按正则化理论，在误差平方和上加光滑性惩罚 $\lambda$ 后，解的形式不变，权值改由 $(\Phi+\lambda I)W=\mathbf d$ 求得；$\lambda=0$ 就退回严格插值。
+整理补充：按正则化理论，在误差平方和上加光滑性惩罚 $\lambda$ 后，解的形式不变，权值改由 $(\Phi+\lambda I)W=\mathbf d$ 求得； $\lambda=0$ 就退回严格插值。
 
 ### 广义 RBF 网络
 
 和正则化 RBF 网络比，广义 RBF 网络有四点不同：
 
-1. **基函数数目**：$M$ 与样本数 $P$ 不同，通常 $M\ll P$。作业题"广义 RBF 神经网络中隐藏层节点数"答案是"远远小于样本数"。
+1. **基函数数目**： $M$ 与样本数 $P$ 不同，通常 $M\ll P$。作业题"广义 RBF 神经网络中隐藏层节点数"答案是"远远小于样本数"。
 2. **中心位置**：不要求落在训练样本上，在训练中确定。
 3. **扩展常数**（宽度）：各基函数的扩展常数不再统一，可以分别确定。
 4. **输出函数**：仍是线性的，但加了阈值参数（图中的 $\varphi_0$ 节点，权值 $T$），用来补偿基函数在样本集上的平均值与目标值平均值之间的差。
 
-网络输出：$f(\mathbf x)=\sum_{m=1}^M w_m\,\phi(\lVert\mathbf x-\mathbf c_m\rVert)$（加阈值项），$\phi(r)=\exp\big(-\frac{r^2}{2\delta^2}\big)$，中心 $\mathbf c_m$ 和宽度 $\delta$ 都是要学的参数。
+网络输出： $f(\mathbf x)=\sum_{m=1}^M w_m\,\phi(\lVert\mathbf x-\mathbf c_m\rVert)$（加阈值项）， $\phi(r)=\exp\big(-\frac{r^2}{2\delta^2}\big)$，中心 $\mathbf c_m$ 和宽度 $\delta$ 都是要学的参数。
 
 ### RBF 网络的非线性映射
 
@@ -155,7 +155,7 @@ $$
 
 ### 广义 RBF 网络的训练
 
-**结构设计**：主要靠经验，定隐层节点数和输出层节点数，隐节点数一般小于样本数（$M<P$）。
+**结构设计**：主要靠经验，定隐层节点数和输出层节点数，隐节点数一般小于样本数（ $M<P$）。
 
 **参数设计**要定三组参数：
 
@@ -165,19 +165,19 @@ $$
 
 #### 中心和扩展常数的三种确定方法
 
-1. **从样本中选取中心**：数据密集处多选、稀疏处少选；数据均匀分布时中心也均匀分布。扩展常数按中心间最大距离 $d_{max}$ 和中心数目 $M$ 取，例如 $\delta=\dfrac{d_{max}}{\sqrt{2M}}$。例：$d_{max}=4$，$M=8$ 时 $\delta=4/\sqrt{16}=1$。
+1. **从样本中选取中心**：数据密集处多选、稀疏处少选；数据均匀分布时中心也均匀分布。扩展常数按中心间最大距离 $d_{max}$ 和中心数目 $M$ 取，例如 $\delta=\dfrac{d_{max}}{\sqrt{2M}}$。例： $d_{max}=4$， $M=8$ 时 $\delta=4/\sqrt{16}=1$。
 2. **自组织选择中心**（k-means 聚类、SOM）：用聚类自动确定中心位置。
 3. **监督学习选中心**：结合输出目标，用梯度下降同时学中心、宽度和权值。
 
 #### 方法 2：k-means 聚类确定中心
 
-先估计中心数目 $M$，记 $c_j(k)$ 为第 $k$ 次迭代时第 $j$ 个中心（$k$ 是迭代次数，$j$ 才是类别编号）。
+先估计中心数目 $M$，记 $c_j(k)$ 为第 $k$ 次迭代时第 $j$ 个中心（ $k$ 是迭代次数， $j$ 才是类别编号）。
 
 1. 初始化：随机取 $c_1(0),c_2(0),\dots,c_M(0)$。
-2. 对每个样本 $X_p$ 计算到各中心的欧氏距离 $\lVert X_p-c_j(k)\rVert$，$p=1,\dots,P$，$j=1,\dots,M$。
-3. 相似匹配：找最近的中心 $j^*$，$\lVert X_p-c_{j^*}(k)\rVert=\min_j\lVert X_p-c_j(k)\rVert$，把 $X_p$ 归入第 $j^*$ 类。
+2. 对每个样本 $X_p$ 计算到各中心的欧氏距离 $\lVert X_p-c_j(k)\rVert$， $p=1,\dots,P$， $j=1,\dots,M$。
+3. 相似匹配：找最近的中心 $j^*$， $\lVert X_p-c_{j^*}(k)\rVert=\min_j\lVert X_p-c_j(k)\rVert$，把 $X_p$ 归入第 $j^*$ 类。
 4. 更新中心，两种做法：
-   - 均值法（k-means）：$c_j(k+1)=\dfrac{1}{N_j}\sum_{X\in U_j(k)}X$，$U_j(k)$ 是第 $j$ 类的样本集合，$N_j$ 是其样本数。
+   - 均值法（k-means）： $c_j(k+1)=\dfrac{1}{N_j}\sum_{X\in U_j(k)}X$， $U_j(k)$ 是第 $j$ 类的样本集合， $N_j$ 是其样本数。
    - 竞争学习（SOM 的做法）：只移动获胜中心，
 
 $$
@@ -187,7 +187,7 @@ $$
    获胜中心向当前样本移动一步，步长由学习率 $\eta$ 和样本到中心的距离决定；其他中心不动。
 5. $k$ 加 1；若中心的变化量没有小于阈值，回到第 2 步。
 
-扩展常数：记 $d_j=\min_i\lVert c_j-c_i\rVert$ 为中心 $c_j$ 到最近的其他中心的距离，取 $\delta_j=\lambda d_j$，$\lambda$ 是缩放因子。
+扩展常数：记 $d_j=\min_i\lVert c_j-c_i\rVert$ 为中心 $c_j$ 到最近的其他中心的距离，取 $\delta_j=\lambda d_j$， $\lambda$ 是缩放因子。
 
 #### 输出层权值
 
@@ -210,9 +210,9 @@ $$
 
 （更正：原文最后一项写作 $G(\lVert X_i-c_i\rVert)$，中心的下标应为 $j$。）
 
-$e_i=d_i-F(X_i)$ 是第 $i$ 个样本的误差，$d_i$ 是目标值，$w_j$、$c_j$、$\delta_j$ 是第 $j$ 个基函数的权值、中心、宽度，$P$ 是样本数，$M$ 是基函数数。
+$e_i=d_i-F(X_i)$ 是第 $i$ 个样本的误差， $d_i$ 是目标值， $w_j$、 $c_j$、 $\delta_j$ 是第 $j$ 个基函数的权值、中心、宽度， $P$ 是样本数， $M$ 是基函数数。
 
-推导要点：$\dfrac{\partial E}{\partial w_j}=-\sum_i e_iG_{ij}$；由 $\dfrac{\partial G}{\partial c_j}=G\cdot\dfrac{X-c_j}{\delta_j^2}$、$\dfrac{\partial G}{\partial \delta_j}=G\cdot\dfrac{\lVert X-c_j\rVert^2}{\delta_j^3}$，再乘上 $\dfrac{\partial E}{\partial G_{ij}}=-e_iw_j$。沿负梯度更新：
+推导要点： $\dfrac{\partial E}{\partial w_j}=-\sum_i e_iG_{ij}$；由 $\dfrac{\partial G}{\partial c_j}=G\cdot\dfrac{X-c_j}{\delta_j^2}$、 $\dfrac{\partial G}{\partial \delta_j}=G\cdot\dfrac{\lVert X-c_j\rVert^2}{\delta_j^3}$，再乘上 $\dfrac{\partial E}{\partial G_{ij}}=-e_iw_j$。沿负梯度更新：
 
 $$
 \Delta c_j=-\eta\frac{\partial E}{\partial c_j}=\eta\frac{w_j}{\delta_j^2}\sum_{i=1}^P e_i\,G(\lVert X_i-c_j\rVert)\,(X_i-c_j)
@@ -240,7 +240,7 @@ $$
 
 ### 应用实例：用 RBF 网络拟合 Hermite 多项式
 
-B 笔记给了一段 numpy 实现：拟合 $y=1.1(1-x+2x^2)e^{-x^2/2}$，$x$ 在 $[-5,5]$ 上取 500 个点，50 个隐节点，权值、中心、宽度的学习率分别是 0.1、0.2、0.1，批量梯度下降训练 1000 轮。第 0 轮输出曲线和目标差得很远，第 100 轮大致形状出来但有毛刺，第 500 轮基本重合。
+B 笔记给了一段 numpy 实现：拟合 $y=1.1(1-x+2x^2)e^{-x^2/2}$， $x$ 在 $[-5,5]$ 上取 500 个点，50 个隐节点，权值、中心、宽度的学习率分别是 0.1、0.2、0.1，批量梯度下降训练 1000 轮。第 0 轮输出曲线和目标差得很远，第 100 轮大致形状出来但有毛刺，第 500 轮基本重合。
 
 下面是按原代码思路整理的版本。原代码有一行在 PDF 里被截断，按上下文补全；另外原代码求中心梯度时先用 `np.dot(hi_output[j], X[j]-c)` 把所有中心的项加成一个向量，再和 $w_j/\sigma_j^2$ 做外积，结果每个中心拿到的是所有中心混在一起的梯度，和上面的 $\Delta c_j$ 公式不符。（更正：中心梯度应逐个中心计算 $\sum_i e_i\,G_{ij}\,(X_i-c_j)$。）两种写法都能收敛，是因为权值和宽度也在同时调整；用同一随机种子各跑 1000 轮，误差平方和的一半分别降到约 0.115（原写法）和 0.059（改正后）。
 
@@ -328,7 +328,7 @@ SVM 的内容见 [06 支持向量机](<06 支持向量机.md>)。
 
 ### 例 1：严格插值（整理补充练习）
 
-一维样本 $x=0,1,2$，目标 $d=1,3,2$，每个样本放一个高斯基函数，$\sigma=1$。求权值。
+一维样本 $x=0,1,2$，目标 $d=1,3,2$，每个样本放一个高斯基函数， $\sigma=1$。求权值。
 
 思路：写插值矩阵 $\phi_{ip}=\exp(-(x_i-x_p)^2/2)$，解 $\Phi W=\mathbf d$。
 
@@ -336,11 +336,11 @@ $$
 \Phi=\begin{pmatrix}1&0.6065&0.1353\\0.6065&1&0.6065\\0.1353&0.6065&1\end{pmatrix}
 $$
 
-解得 $W\approx(-1.3781,\ 3.9702,\ -0.2216)^T$，代回 $\Phi W=(1,3,2)^T$。插值函数 $F(x)=\sum_p w_p e^{-(x-x_p)^2/2}$ 在样本点之间给出预测，比如 $F(0.5)\approx2.2156$，$F(1.5)\approx2.8608$。
+解得 $W\approx(-1.3781,\ 3.9702,\ -0.2216)^T$，代回 $\Phi W=(1,3,2)^T$。插值函数 $F(x)=\sum_p w_p e^{-(x-x_p)^2/2}$ 在样本点之间给出预测，比如 $F(0.5)\approx2.2156$， $F(1.5)\approx2.8608$。
 
 ### 例 2：伪逆法求广义 RBF 网络输出权值（整理补充练习）
 
-样本 $x=0,1,2,3,4$，$d=0,1,1.5,1,0$；取 2 个中心 $c_1=1$、$c_2=3$，$\sigma=1$，输出带阈值。
+样本 $x=0,1,2,3,4$， $d=0,1,1.5,1,0$；取 2 个中心 $c_1=1$、 $c_2=3$， $\sigma=1$，输出带阈值。
 
 思路：隐层输出矩阵 $\hat\Phi$ 是 $5\times3$（两列高斯输出加一列 1），用 $W=(\hat\Phi^T\hat\Phi)^{-1}\hat\Phi^T\mathbf d$。
 
