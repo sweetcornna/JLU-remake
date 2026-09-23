@@ -198,6 +198,14 @@ class Mouse {
 
 课件的两个扩展：参数换成一个父类（`func(Parent p)`），依赖就建立在抽象层上，传哪个子类都行；再进一步，人类（学生、机器人）读书（小说、漫画），依赖的双方都是继承体系，`Human.read(Book b)` 只依赖两个父类。
 
+第一个扩展，老鼠还要吃香蕉、葡萄、桃子，参数改成抽象的 Fruit：
+
+![老鼠吃水果类图：Mouse 的 eat 方法以 Fruit 为参数，用虚线依赖抽象类 Fruit，Apple 和 Banana 继承 Fruit 实现 energy](图/01_老鼠吃水果.png)
+
+第二个扩展，依赖的两端都抽象成继承体系：
+
+![人读书类图：抽象类 Human 的 read 方法以 Book 为参数，Human 用虚线依赖抽象类 Book；Student、Robot 继承 Human，Novel、Cartoon 继承 Book](图/01_人读书两端抽象.png)
+
 **例 2 怪物战斗（自身依赖）**：怪物有速度、生命、攻击、防御四个值。两只怪物一对一轮流攻击，直到一方生命为 0；速度快的先打，速度相同比生命，再比攻击，再比防御，都相同任选一方先打；A 打 B 造成的伤害是"2 × A 的攻击 - B 的防御"，最少为 1。`fight()` 的参数是另一只怪物，类依赖自己。
 
 ```java
@@ -239,9 +247,17 @@ class Monster {
 }
 ```
 
+![怪物类图：Monster 有 speed、hitpoint 两个私有字段和 damage、defense 两个保护字段，方法 fight、harmTo、priorTo 的参数都是另一个 Monster](图/01_怪物自身依赖.png)
+
+这张图漏了最关键的那条线。自身依赖要画一条从 Monster 出发、指回 Monster 自己的虚线箭头，图里只有一个类框，手画时要补上。图里的 `harmTo()` 对应上面代码的 `attack()`，字段 `damage`、`defense` 画成 protected 是为下面的子类扩展准备的。
+
 `other.hitpoint` 能直接访问，因为 Java 的 private 是按类限制的，同一个类的其他对象也能访问。课件测试数据：A(10, 200, 7, 8) 对 B(10, 150, 8, 7)，速度相同、A 生命高，A 先打，每下打掉 B 7 点，B 每下打掉 A 8 点，A 打 22 下获胜，自己剩 32 点生命；把 B 的生命改成 180，A 要打 26 下，先被 B 打死。用 C++ 原版代码实际跑过，结果一致。
 
 课件接着的扩展是"荒岛来了猛兽"：不同动物的伤害公式不同，猛兽还会攻击同类。做法是把伤害计算写成父类 `Animal` 的可重写方法，`fight(Animal other)` 依赖父类，各种动物子类只重写自己的攻击规则。
+
+![怪物扩展类图：Dog、Cat、Crocodile 继承 Monster，各自重写受保护的 harmTo 计算伤害，Crocodile 另有 kill 方法；fight 仍写在父类 Monster 里](图/01_怪物猫狗扩展.png)
+
+讲义这张图沿用 Monster 作父类名，和上一段说的 Animal 是同一个角色。
 
 **例 3 警察抓人（双向依赖）**：警察抓人时调用 `person.beCaught(this)`，不同的人被抓时反应不同（小偷让警察记奖励，普通人什么也不做），双方都在方法参数里用到对方。
 
@@ -263,6 +279,10 @@ class Thief extends Person {
     public void beCaught(Police cop) { cop.addAward(100); }
 }
 ```
+
+![警察抓人类图：Police 的 catchSomeone 以 Person 为参数，虚线依赖抽象类 Person；Person 的 beCaught 以 Police 为参数，虚线依赖回 Police，标着抓和回调加分；Thief、Walker 继承 Person](图/01_警察抓人双向依赖.png)
+
+讲义图里把普通人单独画成子类 Walker，并把 Person 画成抽象类；上面的代码让 Person 自己充当普通人，少写一个类，两种都行。图中的 `catchSomeone` 就是代码里的 `catchPerson`。
 
 **例 4 英雄携带宝物（单向关联）**：英雄有魅力、声望、攻击、防御、法力 5 项能力，最多带 5 个宝物，每种宝物提升某项能力。英雄长期持有宝物袋，是关联。
 
@@ -338,6 +358,12 @@ class Student {
 }
 ```
 
+学生持有宿舍这一半的类图：
+
+![学生和宿舍的单向关联：Student 有私有字段 dorm，用实线箭头指向 Dorm，箭头旁标住在 1；Student 的 dormFloor 通过 Dorm 的 floor 取楼层](图/01_学生宿舍单向关联.png)
+
+宿舍反过来容纳多个学生的那一半是聚合，要在 Dorm 一端画空心菱形连到 Student，讲义这张图没有画。
+
 （更正：SDP01-02 的 `Dorm::AddStudent` 写成 `if ( mStudents[index] == NULL))`，多了一个右括号；构造函数把数组长度设成传入的学生人数，满员后就没有空位可加，和"以后可以随时增删学生"不符，上面改成单独指定容量。）
 
 **例 6 绘图程序里的 Grid（继承加整体-部分）**：已有矩形、椭圆等图形，要加一种 Grid：它本身是一个文本为空的矩形，内部还包含若干个矩形，个数在创建时指定。Grid 继承矩形；内部的矩形由 Grid 创建、随 Grid 销毁。
@@ -374,7 +400,11 @@ class Grid extends Rect {
 }
 ```
 
-课件把这题放在聚合的扩展里。从代码看，内部矩形在 Grid 构造器里创建、在析构函数里删除，生命周期完全由 Grid 控制，按语义更接近组合，画类图时画实心菱形更准确。（更正：原答案 `Class Ellipse` 的 class 首字母大写，C++ 编译不过。）
+课件把这题放在聚合的扩展里。从代码看，内部矩形在 Grid 构造器里创建、在析构函数里删除，生命周期完全由 Grid 控制，按语义更接近组合，画类图时画实心菱形更准确。重制讲义就是这样画的：
+
+![绘图程序 Grid 类图：Ellipse、Rect 继承抽象类 Shape，Grid 继承 Rect，同时用 cells 数组以实心菱形组合 n 个 Shape](图/01_绘图程序Grid.png)
+
+（更正：原答案 `Class Ellipse` 的 class 首字母大写，C++ 编译不过。）
 
 ### 2.6 类设计的难点：应对变化
 
@@ -402,6 +432,8 @@ class A {
 
 假设已有类 `Some`，有 `operA()`、`operB()` 两个方法和一个数据成员。各种变化分别用继承和组合处理：
 
+![应对变化的两条路：左边 SomeChild 继承 Some 并新增 operC，右边 SomeNew 用实心菱形组合一个 Some 对象，operA、operB 委托给它，自己新增 operC](图/01_派生与委托.png)
+
 | 变化 | 用继承（派生 SomeChild） | 用组合（新写 SomeNew，内部持有 Some 并委托） |
 | --- | --- | --- |
 | 加新功能 operC | 子类里加 `operC()` | 新类实现 `operC()`，`operA`、`operB` 转给 Some |
@@ -413,6 +445,8 @@ class A {
 | 改 operA 的实现 | 子类重写 operA（C++ 里父类方法要是虚函数） | 新类自己实现 operA，operB 继续委托 |
 
 结论：职责一变，使用 Some 的代码一般也要跟着改；实现的变化才能做到对使用者透明。几种变化同时出现（operA 和 operB 都有多种实现，还要加 operC）时，综合使用组合和继承，**组合优先**。
+
+![组合优先的做法：Some 用两个空心菱形分别聚合接口 IOperA 和 IOperB，operA、operB 委托给它们；OperA1 实现 IOperA，OperB1 实现 IOperB，要换实现只需再加实现类](图/01_组合优先.png)
 
 （更正：文件A p200-201 在子类里写 `void OperA() override = delete;` 来"删除"或"隐藏"父类方法，这在 C++ 里编译不过。父类 OperA 不是虚函数时不能写 `override`；就算父类 OperA 是虚函数，被删除的函数也不能覆盖一个没被删除的虚函数。两种写法都用 zig c++ 实际编译验证过。继承下想去掉父类的公有方法，C++ 只能改用私有继承再用 `using` 放出需要的成员，更简单的是直接用组合。Java 子类也不能降低继承来的方法的可见性。）
 
@@ -475,6 +509,10 @@ class Canvas {
 }
 ```
 
+![开闭原则的面向对象改法：Painter 的 drawShapes 以 Shape 数组为参数，虚线依赖抽象类 Shape，Circle、Square 继承 Shape 各自实现 draw](图/02_开闭原则图形绘制.png)
+
+讲义图里的 Painter 就是上面代码里的 Canvas。加三角形时只在 Shape 下面多挂一个子类，Painter 和已有的图形类都不动。
+
 day01 的例子是输入法皮肤：定义抽象皮肤类 `AbstractSkin`，默认皮肤和各种主题皮肤是它的子类，输入法类只持有 `AbstractSkin`。用户下载新皮肤，只是多一个子类。
 
 **开闭原则的相对性**：没有系统能 100% 满足开闭原则，模块怎样抽象、模块之间是什么关系，开发初期往往看不清，要不断重构。能做的是找出最可能变化的地方，提前抽象封装。
@@ -492,9 +530,13 @@ day01 的例子是输入法皮肤：定义抽象皮肤类 `AbstractSkin`，默�
 
 **例 1 正方形不是长方形的子类**。正方形继承长方形后，为了保持边长相等，`setWidth()` 会同时改高度。一段针对长方形写的代码"宽设为 5、高设为 4，断言面积是 20"，传入正方形就出错。解决办法是抽出一个四边形父类，里面只放取宽、取高这类两者行为一致的方法，长方形和正方形各自继承它。完整代码见 [12 简答题精编](<12 简答题精编.md>) 第一部分第 8 题。
 
+![抽出四边形基类后的类图：抽象类 Quadrangle 只声明 getWidth 和 getHeight，Rectangle 继承它并提供 setWidth、setHeight，Square 继承它只提供 setSide](图/02_抽出四边形基类.png)
+
 **例 2 鲸鱼和鱼**。鲸鱼是哺乳动物，用肺呼吸、胎生，鱼类的很多特性它没有，让鲸鱼继承鱼违反里氏代换。两者共同的只有"会游泳"，把它提成一个接口，鱼和鲸鱼分别实现。
 
 **例 3 运动员和自行车**。课件的反例让运动员类私有继承自行车类（`class Player : private Bike`），想借用自行车的功能。运动员不是一种自行车，他只是有一辆自行车，应改为关联：`Player` 里持有一个 `Bike` 引用。
+
+![运动员和自行车改成关联：Player 用实线箭头通过 bike 字段关联 Bike，比赛时调用 Bike 的 move、stop、repair](图/02_运动员与自行车.png)
 
 两个具体类 A、B 之间（B 继承 A）违反了里氏代换，有两种重构办法：
 
@@ -544,6 +586,10 @@ class Regulator {
 ```
 
 （更正：SDP01-03 的伪代码里 `h.Engate()` 是 `Engage` 的笔误。）
+
+![熔炉调节器依赖倒置后的类图：Regulator 的 regulate 以 Thermometer、Heater 和上下限为参数，虚线依赖两个接口；ChannelThermometer 实现 Thermometer 的 read，ChannelHeater 实现 Heater 的 engage 和 disengage](图/02_熔炉调节器.png)
+
+调节算法和具体的 IO 通道类之间没有任何连线，两边都只和接口打交道，依赖方向就这样倒了过来。
 
 **组装电脑**（day01）：`Computer` 类里直接写着希捷硬盘、Intel CPU、金士顿内存三个具体类，想换 AMD 的 CPU 就得改 `Computer`。改成依赖 `HardDisk`、`Cpu`、`Memory` 三个接口，具体配件由外部注入：
 
@@ -610,6 +656,8 @@ class ModemImpl implements Connection, DataChannel {
 }
 ```
 
+![Modem 接口拆分后的类图：接口 Connection 声明 dial 和 hangup，接口 DataChannel 声明 send 和 recv，ModemImplementation 用虚线同时实现两个接口](图/02_Modem接口拆分.png)
+
 **矩形例子**：`Rectangle` 有 `area()` 和 `draw()` 两个方法，计算几何程序只用面积，图形界面程序要绘制。放在一个类里，计算几何程序也得带上图形界面的库，绘制方式一改还可能影响计算面积的程序。拆成只负责几何数据和面积的 `GeometryRectangle`，以及负责绘制、内部使用 `GeometryRectangle` 的 `Rectangle`。
 
 单一职责原则是七条里最简单、也最难用好的：职责分多细没有公式，要靠经验判断。它从"改变的理由"这个角度给类和接口的粒度提供了判断标准。相关分析题见 [32 分析题与重构练习](<32 分析题与重构练习.md>) 第 1、3 题。
@@ -629,6 +677,24 @@ class ModemImpl implements Connection, DataChannel {
 | 二 | `Door` 接口继承 `Alarm` 接口 | 违反：同上，`Door` 被 `Alarm` 污染 |
 | 三 | `Door`、`Alarm` 两个独立接口；`AlarmDoor` 继承 `CommonDoor` 并实现 `Alarm` | 符合，比较实用 |
 | 四 | `AlarmDoor` 实现 `Door` 和 `Alarm`，开锁关锁委托给内部持有的 `CommonDoor` | 符合，用关联代替继承 |
+
+方法一，三个方法挤在一个 Door 接口里，普通门也得写 `alarm()`：
+
+![门接口方法一：Door 接口声明 lock、unlock、alarm，CommonDoor 和 AlarmDoor 都实现全部三个方法](图/02_门接口方法一.png)
+
+方法二，Door 接口继承 Alarm 接口，结果一样：
+
+![门接口方法二：Door 接口继承 Alarm 接口，CommonDoor 和 AlarmDoor 实现 Door 后仍然都要写 alarm](图/02_门接口方法二.png)
+
+方法三，两个接口分开，报警门继承普通门再实现 Alarm：
+
+![门接口方法三：Door、Alarm 是两个独立接口，CommonDoor 实现 Door，AlarmDoor 继承 CommonDoor 并实现 Alarm，只新增 alarm](图/02_门接口方法三.png)
+
+方法四，报警门持有一个普通门，开锁关锁委托给它：
+
+![门接口方法四：CommonDoor 实现 Door，AlarmDoor 实现 Alarm，并用 door 字段以空心菱形聚合 CommonDoor](图/02_门接口方法四.png)
+
+方法四这张图少画了一条线。按表里的设计，AlarmDoor 还要实现 Door 接口，客户端才能把它当门用，应从 AlarmDoor 再画一条虚线空心三角指向 Door。
 
 ```java
 interface Door {
@@ -688,6 +754,14 @@ day01 的安全门例子同理：防盗、防火、防水拆成三个接口，�
 另外，只有两个类满足里氏代换原则时才可能是 is-a 关系。
 
 **人和角色**：把雇员、经理、学生设计成"人"的子类是常见错误。它们是人扮演的角色，一个人可以同时是雇员和学生，继承表达不了。正确做法：抽象出"角色"类，雇员、经理、学生继承角色，人聚合多个角色。
+
+用继承硬做，一个人既是雇员又是学生时只能再派生一个 EmployeeStudent，角色每多一种组合就多一个类：
+
+![人和角色的错误设计：Employee、Student 继承 Person，EmployeeStudent 同时继承 Employee 和 Student](图/02_人和角色继承.png)
+
+改成组合后，一个人身上挂几个角色都行，运行时还能增减：
+
+![人和角色的正确设计：Person 用 roles 列表带空心菱形聚合抽象类 Role，Employee、Manager、Student 继承 Role](图/02_人和角色组合.png)
 
 **汽车分类**（day01）：汽车按动力分汽油车、电动车，按颜色分白、黑、红。全用继承要写 2 × 3 = 6 个子类，加一种颜色就要加两个类。把颜色抽出来，汽车持有一个颜色对象：
 
@@ -756,6 +830,8 @@ class Teacher {
 ```
 
 day01 的明星和经纪人也是一个意思：粉丝见面会、和媒体公司谈业务都由经纪人安排，明星只和经纪人打交道，粉丝和公司对明星来说是陌生人。还有购房者通过售楼处了解各个楼盘，不直接跑到每个楼盘去。
+
+![迪米特法则示意：购房者 A、B 只和售楼处打交道，由售楼处再去联系楼盘 A、B、C，购房者和楼盘之间没有直接连线](图/02_迪米特法则.png)
 
 应用迪米特法则还要注意：
 
