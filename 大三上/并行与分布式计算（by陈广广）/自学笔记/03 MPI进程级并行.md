@@ -62,7 +62,9 @@
 - 管道、消息队列、套接字等 IPC 方式都属于消息传递。
 - 上一章讲的是共享变量模型（子任务间共享内存），本章关注消息传递模型（子任务间不能共享内存）。这是进程级并行中最简单、最自然的进程交互方式。
 
-（原稿此处有图对比共享变量和消息传递两种模型，PDF 中图片已丢失。自己画的时候：共享变量画成多个线程箭头指向同一块内存；消息传递画成两个各带私有内存的进程，中间一条带箭头的消息通道。）
+原稿第 3 章这里的对比图链接已失效，第 2 章讲并行编程模型时用过同一个对比，那张图还在：
+
+![共享变量与消息传递：左边 thread 0 和 thread 1 都直接访存同一块 Memory 里的 Data x；右边只有 thread 0 访存 Data x，thread 1 要拿数据得靠 thread 0 发过来的一次通信](图/2-1_共享变量与消息传递.png)
 
 ### send / receive 与同步、异步
 
@@ -259,7 +261,9 @@ MPI 中的消息像一个信封，分两部分，各由一个三元组组成：
 | 消息缓冲 Message Buffer | 起始地址、数据个数、数据类型 | 数据的实际内容，例如数组或标量 |
 | 消息信封 Message Envelope | 目标进程编号、消息标识 tag、通信域 | 数据的元信息，例如发给谁、怎么区分 |
 
-对着 `MPI_Send` 的参数表看，六个参数正好就是这六个要素。
+对着 `MPI_Send` 的参数表看，六个参数正好就是这六个要素：
+
+![MPI_Send 的六个参数：前三个 buf、count、datatype 用大括号归为消息缓冲，后三个 dest、tag、comm 归为消息信封](图/3-5_消息缓冲与消息信封.png)
 
 ### 为什么需要 tag
 
@@ -319,7 +323,11 @@ int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
 
 ### 点到点通信示意图
 
-原稿的流程图是：数据发送缓冲区 → 消息装配 → 消息传递 → 消息拆卸 → 数据接收缓冲区。图上同时列出了四种模式的阻塞与非阻塞函数名：
+流程是：数据发送缓冲区 → 消息装配 → 消息传递 → 消息拆卸 → 数据接收缓冲区。
+
+![点到点通信示意图：数据发送缓冲区向下进入消息装配，经消息传递、消息拆卸，最后进入数据接收缓冲区；图上方列出标准、缓存、就绪、同步四种模式的阻塞与非阻塞函数名](图/3-5_点到点通信示意图.png)
+
+图上列的四种模式的阻塞与非阻塞函数名：
 
 | 模式 | 阻塞 | 非阻塞 |
 | --- | --- | --- |
@@ -439,6 +447,10 @@ int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype,
               int dest, int tag, MPI_Comm comm);
 ```
 
+四种模式的时序图都画两条时间轴：上面实线 S 是发送方，下面虚线 R 是接收方，斜线阴影是数据真正在传的那一段。
+
+![同步发送时序：S 在 MPI_SSEND 处停下等待（task waits），直到 R 调用 MPI_RECV 后数据才开始传输，传完 S 才继续；R 调用 MPI_RECV 后也要等缓冲区填满](图/3-6_同步发送MPI_Ssend.png)
+
 **缓冲通信 `MPI_Bsend`**
 
 - 不管接收操作是否已经启动都可以执行发送。
@@ -449,9 +461,13 @@ int MPI_Bsend(const void *buf, int count, MPI_Datatype datatype,
               int dest, int tag, MPI_Comm comm);
 ```
 
+![缓冲发送时序：S 调用 MPI_BSEND 后先把数据拷进用户提供的缓冲区，拷完立刻继续执行，不等接收方；之后 R 调用 MPI_RECV，数据才从缓冲区传给 R，等待的只有接收方](图/3-6_缓冲发送MPI_Bsend.png)
+
 **标准通信 `MPI_Send`**
 
-是否对发送的数据进行缓冲由 MPI 的实现决定，而不是由用户程序控制。发送可以是同步的或缓冲的，取决于实现。
+是否对发送的数据进行缓冲由 MPI 的实现决定，而不是由用户程序控制。发送可以是同步的或缓冲的，取决于实现。原稿的示意图只画了发送方 S 到接收方 R 的一条箭头：
+
+![标准通信：发送方 S 与接收方 R 两个椭圆之间一条标号为 1 的单向箭头](图/3-6_标准发送MPI_Send.png)
 
 **就绪通信 `MPI_Rsend`**
 
@@ -463,6 +479,8 @@ int MPI_Bsend(const void *buf, int count, MPI_Datatype datatype,
 int MPI_Rsend(const void *buf, int count, MPI_Datatype datatype,
               int dest, int tag, MPI_Comm comm);
 ```
+
+![就绪发送时序：R 先调用 MPI_RECV 进入等待，S 随后调用 MPI_RSEND，数据立即传输，S 传完就继续，R 等到缓冲区填满](图/3-6_就绪发送MPI_Rsend.png)
 
 ### 四种模式小结
 
@@ -489,7 +507,11 @@ int MPI_Bsend(const void *buf, int count, MPI_Datatype datatype, int dest, int t
 - 通信操作已经完成，即消息已经发送或接收；
 - 调用的缓冲区可用。发送操作时该缓冲区可以被其他操作更新；接收操作时该缓冲区的数据已经完整，可以被正确引用。
 
-非阻塞通信的函数**立即返回**，但不保证缓冲区等资源可以立即重新使用。写法是在函数名中加上字母 I，即 `MPI_I[r/b/s]send`。标准发送与接收的非阻塞形式：
+非阻塞通信的函数**立即返回**，但不保证缓冲区等资源可以立即重新使用。
+
+![非阻塞发送与接收流程：非阻塞发送启动发送后立即返回，接着计算，同时后台发送消息；非阻塞接收启动接收后立即返回，接着计算，同时后台接收消息；两条线在通信完成处汇合，发送方随后释放发送缓冲区，接收方随后引用接收数据；中间一段标注计算与通信重叠](图/3-6_非阻塞通信流程.png)
+
+写法是在函数名中加上字母 I，即 `MPI_I[r/b/s]send`。标准发送与接收的非阻塞形式：
 
 ```c
 int MPI_Isend(const void *buf, int count, MPI_Datatype datatype,
@@ -557,6 +579,8 @@ int MPI_Barrier(MPI_Comm communicator);
 
 从一个根节点（root）把数据广播到一个通信域中的所有其他进程：根进程负责发送数据，其他所有进程接收该数据。`MPI_Bcast` 是**阻塞操作**，只有当所有进程都调用 `MPI_Bcast` 时，通信才会完成。
 
+![广播：根进程 0 持有 data=1，箭头指向进程 1 到 4，广播后每个进程都得到 data=1](图/3-7_广播MPI_Bcast.png)
+
 ```c
 int MPI_Bcast(
     void *data,            // 指向根节点要广播的数据的指针
@@ -610,6 +634,10 @@ Process 4 received data =1
 ### 分发 MPI_Scatter
 
 把根节点的一组数据按块划分，分发到通信域中每个进程的接收缓冲区。发送方（根节点）把数据分成多份，每份发给不同的进程；接收方收到与自己对应的那部分。
+
+![分发：根进程 0 持有 data=1,2,3,4，分别发给进程 1 到 4，四个进程依次得到 1、2、3、4](图/3-7_分发MPI_Scatter.png)
+
+图上把根进程单独画在上面、四个接收者画在下面，是示意画法。实际调用时根进程自己也是接收者之一，下面的例子里 4 个进程（0 到 3）分别收到 1、2、3、4，进程 0 收到的是 1。收集 `MPI_Gather` 的图也按同样的方式读。
 
 ```c
 int MPI_Scatter(
@@ -670,6 +698,8 @@ Process 3 received data=4
 ### 收集 MPI_Gather
 
 `MPI_Gather` 是 `MPI_Scatter` 的反向操作：把通信域中每个进程的数据收集到根进程上。所有参与的进程提供自己的本地数据，根进程按 rank 顺序收进指定的接收缓冲区。
+
+![收集：进程 1 到 4 分别持有 data=1、2、3、4，箭头都指向根进程 0，收集后根进程得到 data=1,2,3,4](图/3-7_收集MPI_Gather.png)
 
 ```c
 int MPI_Gather(
@@ -782,7 +812,9 @@ int MPI_Allgather(const void *sendbuf, int sendcount,
 | `recvtype` | 接收数据的类型 |
 | `comm` | 通信域 |
 
-图示：进程 0、1、2 分别持有 1、2、3，Allgather 之后三个进程手里都是 `1,2,3`。相当于 Gather 之后再 Bcast 一次。
+进程 0、1、2 分别持有 1、2、3，Allgather 之后三个进程手里都是 `1,2,3`。相当于 Gather 之后再 Bcast 一次。
+
+![全局收集：上排进程 0、1、2 分别持有 1、2、3，每个进程都向下排的三个进程各发一份，结束后三个进程都持有 1,2,3](图/3-7_全局收集MPI_Allgather.png)
 
 ### 全局交换 MPI_Alltoall
 
@@ -805,6 +837,8 @@ int MPI_Alltoall(const void *sendbuf, int sendcount,
 | `recvcount` | 每个进程从**每个**源进程接收的数据数量 |
 | `recvtype` | 接收数据的类型 |
 | `comm` | 通信域 |
+
+![全局交换：上排进程 0、1、2 分别持有 1,2,3、4,5,6、7,8,9，每个进程把第 i 块发给进程 i，结束后三个进程分别持有 1,4,7、2,5,8、3,6,9](图/3-7_全局交换MPI_Alltoall.png)
 
 图示流程：
 
@@ -846,7 +880,9 @@ int MPI_Reduce(
 | `root` | 执行归约操作的根进程编号 |
 | `comm` | 通信域 |
 
-`count` 怎么影响结果，看原稿这两张图就清楚：
+`count` 怎么影响结果，看这两张图就清楚：
+
+![MPI_Reduce 的 count 参数：上图 count=1，进程 0 到 3 分别持有 5、2、7、4，经 MPI_SUM 后根进程 0 得到 18；下图 count=2，四个进程分别持有 5 1、2 3、7 8、4 2，按下标分别求和，根进程得到 18 和 14](图/3-7_归约MPI_Reduce的count.png)
 
 - `count=1`：进程 0、1、2、3 分别持有 5、2、7、4，`MPI_SUM` 之后根进程 0 得到 18。
 - `count=2`：四个进程分别持有 (5,1)、(2,3)、(7,8)、(4,2)，`MPI_SUM` 之后根进程 0 得到 (18, 14)。
@@ -970,7 +1006,7 @@ if (world_rank == 0) {
 - 点到点通信和集合通信都需要发送方和接收方配合，属于基于同步的消息传递方式。
 - 单边通信把**数据传递和同步两个操作解耦**：每个进程把一部分内存暴露给其他进程，其他进程可以任意访问该内存区域，在不需同步的情况下传递数据。
 
-原稿的图把四个进程的 Private Memory Region 放在一条 Global Address Space 里，进程之间用虚线箭头互相读写对方的内存。
+![RMA 的全局地址空间：Process 0 到 3 各有一块 Private Memory Region，一条绿色的 Global Address Space 横穿四块内存，虚线箭头表示进程直接读写别的进程暴露出来的那部分内存](图/3-8_RMA全局地址空间.png)
 
 ### 创建和销毁窗口
 
@@ -1002,7 +1038,11 @@ int MPI_Win_free(MPI_Win *win);
 
 ### 三个数据操作
 
+三张示意图的画法相同：虚线左边是发起操作的 Origin 进程，右边是 Target 进程；上面的立方体是可被远程访问的窗口内存，下面的黄方块是进程的私有内存。
+
 **`MPI_Put`**：把本地内存的数据写入到远程进程的窗口内存中。
+
+![MPI_Put：箭头从 Origin 的私有内存指向 Target 的可远程访问内存](图/3-8_MPI_Put.png)
 
 ```c
 int MPI_Put(
@@ -1019,6 +1059,8 @@ int MPI_Put(
 
 **`MPI_Get`**：从远程进程的窗口内存读取数据到本地内存。
 
+![MPI_Get：箭头从 Target 的可远程访问内存指回 Origin 的私有内存](图/3-8_MPI_Get.png)
+
 ```c
 int MPI_Get(
     void *origin_addr,            // 本地起始地址
@@ -1033,6 +1075,8 @@ int MPI_Get(
 ```
 
 **`MPI_Accumulate`**（原子加法）：把本地数据按指定操作（如求和）累加到远程进程的窗口内存中。比 `MPI_Put` 多一个 `MPI_Op op` 参数。
+
+![MPI_Accumulate：箭头从 Origin 的私有内存指向 Target 的可远程访问内存，目标处标着加等于号，表示把数据累加到目标值上](图/3-8_MPI_Accumulate.png)
 
 ```c
 int MPI_Accumulate(

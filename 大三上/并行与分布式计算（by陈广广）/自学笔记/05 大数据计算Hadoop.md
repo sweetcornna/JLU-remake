@@ -1,6 +1,6 @@
 # 第 5 章 大数据多机计算：Hadoop
 
-整理自 `并行与分布式笔记.pdf` 第 139–153 页（第 5 章），Spark 示例的最后几段排在第 154 页上半部分，也一并收在这里。原稿是学长的 Markdown 笔记导出的 PDF，图片链接已失效，需要图的地方改成了文字描述；Hadoop 和 Spark 的对比表、WordCount 完整代码只存在于截图里，这里已经抄成文字。
+整理自 `并行与分布式笔记.pdf` 第 139–153 页（第 5 章），Spark 示例的最后几段排在第 154 页上半部分，也一并收在这里。原稿是学长的 Markdown 笔记导出的 PDF，拓扑、HDFS、YARN、MapReduce 数据流这几张结构图都还在，已裁出放进正文；Hadoop 和 Spark 的对比表、WordCount 完整代码只存在于截图里，这里已经抄成文字。
 
 ## 本章要点
 
@@ -46,16 +46,7 @@ $$\frac{50000 \times 4 \times 1\%}{365} \approx 5\ \text{次}$$
 
 ### 1.3 数据中心机房网络拓扑（要会画）
 
-原稿此处有图，PDF 中图片已丢失，结构是这样：
-
-```
-                    核心交换机
-             /          |          \
-      接入交换机    接入交换机   ……   接入交换机
-        | 节点        | 节点            | 节点
-        | ……          | ……              | ……
-        | 节点        | 节点            | 节点
-```
+![数据中心机房网络拓扑：顶上一个核心交换机，向下连若干接入交换机，每个接入交换机下面竖排着一个机架的节点](图/5-1_数据中心机房网络拓扑.png)
 
 一句话说明：一个机架内的节点连接到接入交换机，接入交换机再连接到核心交换机。画图时机架内的节点竖着排，上面顶一个接入交换机，所有接入交换机再往上汇到一个核心交换机。
 
@@ -176,18 +167,15 @@ HDFS 的设计建立在六条假设上：
 
 HDFS 使用 **master/slave 架构**，集群包含一个 NameNode 和多个 DataNode。
 
-原稿此处有两张图，PDF 中图片已丢失。第一张的结构：
+原稿给了两张图。第一张是简图：
 
-```
-                     Client
-                        |  TCP/IP Networking
-                        +------- NameNode（Metadata）
-                        |
-   +---------+----------+----------+---------+
-DataNode  DataNode  DataNode  DataNode
-```
+![HDFS 简图：Client 经 TCP/IP 网络连到保存元数据的 NameNode，同一条网络下面挂着四个 DataNode](图/5-4_NameNode与DataNode.png)
 
-第二张是 Hadoop 官方的 HDFS Architecture 图，要点是：Client 向 NameNode 发 Metadata ops，NameNode 持有 `Metadata (Name, replicas, …)` 这样的记录并对 DataNode 发 Block ops；DataNode 分布在 Rack 1 和 Rack 2 两个机架上，机架之间有 Replication 箭头；Client 的 Read 从 DataNode 直接读，Write 直接写到 DataNode。画图时把"元数据走 NameNode、真实数据走 DataNode"这条线表达出来就够了。
+第二张是 Hadoop 官方的 HDFS Architecture 图：
+
+![HDFS 架构：Client 向 Namenode 发元数据操作，Namenode 记着 Name 和 replicas 这类元数据并向 Datanode 发块操作；Datanode 分布在 Rack 1 和 Rack 2，机架之间有 Replication；读数据时 Client 直接从 Datanode 读，写数据时 Client 直接写到两个机架上的 Datanode](图/5-4_HDFS架构.png)
+
+画图时把"元数据走 NameNode、真实数据走 DataNode"这条线表达出来就够了。
 
 | | NameNode | DataNode |
 | --- | --- | --- |
@@ -215,7 +203,9 @@ Hadoop 拥有 **Rack Awareness（机架感知）** 功能，通过它可以制�
 - 例如副本数为 3 时：选择写操作所在机架放置一个副本，另选一个机架放置两个副本。
 - 类似地，读取时也会优先选择相同机架上的副本。
 
-原稿此处有 Block Replication 图，PDF 中图片已丢失，内容是 NameNode 里记着 `(Filename, numReplicas, block-ids, …)`，下面八个 DataNode 里散落着编号 1~5 的块，同一编号出现在多个 DataNode 上。
+![Block Replication：Namenode 里记着 part-0 副本数 2、块号 1 和 3，part-1 副本数 3、块号 2、4、5；下面八个 Datanode 里散落着编号 1 到 5 的块，同一编号出现在多个 Datanode 上](图/5-4_Block_Replication.png)
+
+对着图数一遍：part-0 的块 1、块 3 各出现 2 次，part-1 的块 2、4、5 各出现 3 次，正好等于 NameNode 里记的副本数 r:2 和 r:3，而且同一个块的副本都落在不同的 DataNode 上。
 
 ## 5 YARN：调度器
 
@@ -228,7 +218,9 @@ Hadoop 拥有 **Rack Awareness（机架感知）** 功能，通过它可以制�
 - **Hadoop 1.0** 使用 JobTracker 与 TaskTracker 对 MR 任务进行调度，这种任务调度与 MR 框架深度耦合。
 - **Hadoop 2.0** 把资源和作业管理部分提取为独立的 YARN 框架，与 MR 解耦，优化了调度方式，还能在其上支持更多的计算模型。
 
-原稿此处有 Hadoop 1.0 与 2.0 的对比图，PDF 中图片已丢失。要点：1.0 里 MapReduce 自带 Scheduler，MapReduce 和 Spark 各占一个集群（Cluster 1 跑 MR + HDFS，Cluster 2 跑 Spark）；2.0 里 MapReduce on YARN 和 Spark on YARN 共用一层 YARN，YARN 下面是同一个 HDFS，同一个 Cluster 1。图上"两个集群变一个集群"就是解耦带来的好处。
+![Hadoop 1.0 与 2.0：上方示意一个 Application 或 Job 拆成若干 Task，分派到集群里空闲的 Node 上，避开忙碌的 Node；下方左边 Hadoop 1.0 里 MapReduce 自带 Scheduler 跑在 Cluster 1 的 HDFS 上，Spark 单独占 Cluster 2；右边 Hadoop 2.0 里 MapReduce on YARN 和 Spark on YARN 共用一层 YARN 和同一个 HDFS](图/5-5_Hadoop1与Hadoop2.png)
+
+要点：1.0 里 MapReduce 自带 Scheduler，MapReduce 和 Spark 各占一个集群（Cluster 1 跑 MR + HDFS，Cluster 2 跑 Spark）；2.0 里 MapReduce on YARN 和 Spark on YARN 共用一层 YARN，YARN 下面是同一个 HDFS，同一个 Cluster 1。图上"两个集群变一个集群"就是解耦带来的好处。
 
 ### 5.2 YARN 的主要工作（5 点，考点）
 
@@ -242,7 +234,9 @@ Hadoop 拥有 **Rack Awareness（机架感知）** 功能，通过它可以制�
 
 ### 5.3 YARN 的架构（4 个组件，考点，要会画）
 
-原稿此处有图，PDF 中图片已丢失。画法：左边两个 Client（App 1、App 2）用虚线箭头把 Job Submission 指向中间的 **ResourceManager**；右边三个方框是三个节点，每个节点里有一个 **NodeManager** 和若干 **Container**，其中两个节点里有 **App Mstr**（ApplicationMaster）；NodeManager 用点划线把 Node Status 汇报给 ResourceManager，App Mstr 用点线向 ResourceManager 发 Resource Request，App Mstr 与 Container 之间是 MapReduce Status 实线。图例四种线：MapReduce Status、Job Submission、Node Status、Resource Request。
+![YARN 架构：App 1 和 App 2 两个 Client 把作业提交给 ResourceManager；右边三个节点各有一个 NodeManager，向 ResourceManager 汇报节点状态；两个节点里各有一个 App Mstr，向 ResourceManager 申请资源，并收集分布在各节点 Container 里的 MapReduce 状态](图/5-5_YARN架构.png)
+
+原稿后面还用同一张图分别框出 ApplicationMaster、ResourceManager、NodeManager 讲了三遍，图形相同，这里只放一张。画法：左边两个 Client（App 1、App 2）用虚线箭头把 Job Submission 指向中间的 **ResourceManager**；右边三个方框是三个节点，每个节点里有一个 **NodeManager** 和若干 **Container**，其中两个节点里有 **App Mstr**（ApplicationMaster）；NodeManager 用点划线把 Node Status 汇报给 ResourceManager，App Mstr 用点线向 ResourceManager 发 Resource Request，App Mstr 与 Container 之间是 MapReduce Status 实线。图例四种线：MapReduce Status、Job Submission、Node Status、Resource Request。
 
 | 组件 | 职责 |
 | --- | --- |
@@ -296,7 +290,17 @@ Map 与 Reduce 操作的是**数据分片**而非所有数据，因此在各机�
 3. （对中间值按 key 进行排序。）
 4. 在各机器（reduce worker）上启动代码副本，执行 reduce 操作，读入各自 key 对应的中间值并生成结果。
 
-原稿此处有一张"基于 Map 和 Reduce 的并行计算模型"图，PDF 中图片已丢失。流程是：海量数据存储 → 数据划分成若干初始 kv 键值对 → 多个 Map → 多个 Combiner → 中间结果 → Partitioner + Barrier → 多个 Reduce → 计算结果。图上标了一句"示例中不包含 Combiner"。
+MapReduce 论文里的执行流程图把这几步画成了数据流：
+
+![MapReduce 执行流程：用户程序 fork 出 Master 和若干 worker；Master 给 worker 分配 map 或 reduce 任务；map worker 读入 split 0 到 4 中的分片，把中间结果写到本地磁盘；reduce worker 远程读取中间文件，最后写出 output file 0 和 1](图/5-6_MapReduce执行流程.png)
+
+图上的编号就是执行顺序：(1) fork，(2) 分配 map 和 reduce，(3) 读分片，(4) 本地写中间文件，(5) 远程读中间文件，(6) 写输出文件。
+
+原稿还有一张"基于 Map 和 Reduce 的并行计算模型"图，用一个字数统计的例子把键值对怎么流动画了出来：
+
+![基于 Map 和 Reduce 的并行计算模型：海量数据划分成四份初始键值对交给四个 Map，各自输出 the、weather、is、good、today、has 的计数，经 Combiner 在本地合并，第三个 Combiner 把两个 good 合成 good 2；Partitioner 在 Barrier 处按单词分给三个 Reduce，分别汇总出 good 5，is 3 和 has 1，weather 3、the 1 和 today 2](图/5-6_Map与Reduce并行计算模型.png)
+
+流程是：海量数据存储 → 数据划分成若干初始 kv 键值对 → 多个 Map → 多个 Combiner → 中间结果 → Partitioner + Barrier → 多个 Reduce → 计算结果。图上的数能对上：good 在四个 Map 里分别出现 1、1、2、1 次，合计 5；weather 出现 3 次，today 2 次。图左边那句"示例中不包含 Combiner"箭头指向 Combiner 一层，说的是上面 6.2 节的伪代码没有这一步；后面第 7 节的 Hadoop 完整代码用 `job.setCombinerClass` 加上了。
 
 ### 6.4 补充：API 与 ABI 的区别
 
