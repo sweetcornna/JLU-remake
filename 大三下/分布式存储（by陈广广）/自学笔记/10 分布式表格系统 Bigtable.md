@@ -85,11 +85,19 @@ Bigtable 把多个列组织成列族，列名由两部分组成：`(column famil
 
 **课件的例子**：行主键 `com.cnn.www` 是域名 `www.cnn.com` 变换后的结果。这样做的好处是让 `www.cnn.com` 下的所有子域名在系统中连续存放。这一行数据包含两个列族 `contents` 和 `anchor`，其中 `anchor` 又包含两个列，qualifier 分别为 `cnnsi.com` 和 `my:look.ca`。
 
+![Bigtable 存储格式示例：行主键 com.cnn.www 这一行里，contents 列存了 t4、t5、t6 三个时间戳的网页 html，anchor:cnnsi.com 列在 t9 存了 CNN 三个字母的锚文本，anchor:my:look.ca 列在 t8 存了 CNN.com 的锚文本](图/6-1_Bigtable行列时间戳存储示例.png)
+
+图中第一列的列名印成了 "contens:"，是原图笔误，应为 "contents:"。
+
 对着这个例子拆一遍完整的单元名：`anchor:cnnsi.com` 这个列存的是 `cnnsi.com` 这个页面指向 CNN 时用的锚文本，值是 `"<CNN>"`。反转域名这个技巧是每年都可能考的小点，问的是"为什么要把 `www.cnn.com` 写成 `com.cnn.www`"，答案是让顺序分布把同一站点的数据切到同一批子表里，扫描一个站点只需要访问少数几台机器。
 
 **时间戳与版本**
 
-Google 的很多服务（比如 Web 检索和用户的个性化设置）需要保存不同时间的数据，这些版本必须通过时间戳区分。课件图中的 t4、t5、t6 表示保存了三个时间点获取的网页。为了简化版本管理，Bigtable 提供两种设置：
+Google 的很多服务（比如 Web 检索和用户的个性化设置）需要保存不同时间的数据，这些版本必须通过时间戳区分。上面那张图里 contents 列的 t4、t5、t6 就是三个时间点抓取的同一个网页。课件还有一张把行、列、版本三个维度标出来的图：
+
+![Bigtable 三个维度：左边行主键 com.aaa、com.cnn.www、com.cnn.www/TECH、com.weather 自上而下按字典序排列，列有 language 和 contents 两个，contents 单元里叠着多张网页卡片表示多个版本，com.cnn.www 有 t2、t4、t7 三个版本，com.weather 有 t7 和 t15 两个](图/6-1_Bigtable行列版本示意.png)
+
+为了简化版本管理，Bigtable 提供两种设置：
 
 1. 保留最近的 N 个不同版本。
 2. 保留限定时间内的所有不同版本，比如最近 10 天的所有版本。
@@ -129,6 +137,8 @@ Chubby 底层的核心算法是 Paxos（Paxos 算法的首次工业实现）。
 - 典型部署是**两地三数据中心五副本**：同城的两个数据中心分别部署两个副本，异地的数据中心部署一个副本。任何一个数据中心整体发生故障都不影响正常服务。
 - 至少 5 个服务器构成一个 Chubby Cell，服务于多个分布式客户端，必须保证一半以上节点正常工作。
 
+![一个 Chubby 单元由 5 台服务器组成，其中一台是 master；多个客户端进程各自由应用程序加 chubby 库组成，通过 RPC 访问 master](图/6-2_Chubby单元的五台服务器.png)
+
 算一下为什么是五副本：五副本能容忍两台故障。同城两个中心各两副本、异地一副本的布局下，任何一个数据中心整体挂掉最多带走两个副本，剩下三个仍然是多数派。如果只放三副本、同城两个中心分 2 加 1，那么挂掉放了两副本的那个中心就只剩一个副本，达不到多数派。
 
 Paxos 的两阶段流程（课件在第 155 页把 3.10 节的内容原样重复了一遍）详见 [05 事务、并发控制与分布式协议.md](<05 事务、并发控制与分布式协议.md>)，这里不重复。
@@ -155,7 +165,13 @@ Bigtable 把大表划分为大小在 100 到 200MB 的子表（tablet），每�
 
 客户端、主控服务器和子表服务器执行过程中都需要依赖 Chubby，**如果 Chubby 发生故障，Bigtable 系统整体不可用**。
 
+![Bigtable 系统架构：客户端程序库向主控服务器做元数据操作，向各 Tablet Server 直接读写数据，并打开 Chubby 锁服务里的锁文件；主控服务器负责元数据操作和负载均衡，集群调度系统负责故障恢复和监控，GFS 存操作日志和子表 SSTable 数据，Chubby 存元数据并执行 Master 选举](图/6-2_Bigtable系统架构.png)
+
+图上"打开锁文件"这几个字夹在竖直箭头和右侧曲线之间，它说的是通往 Chubby 的那条曲线，竖直箭头和斜箭头一样是读写数据。
+
 典型 Bigtable 系统一句话：分布式文件存储系统加分布式索引层，外加任务调度和分布式锁（共享信息管理）。
+
+![典型 Bigtable 集群的部署：上方三台管理机分别跑集群调度 Master、锁服务、GFS Master；下方每台机器 Machine 1 到 N 都在 Linux 上同时跑 GFS Chunk Server 和调度 Slave，其中大部分再跑 Big Table Server，Machine N 跑的是 Big Table Master](图/6-2_典型Bigtable集群部署.png)
 
 数据不经过 Master 这一点和 GFS 是同一个套路：Master 只管元数据，把大流量的读写下放给工作节点直接和客户端对接。
 
@@ -205,6 +221,12 @@ Bigtable 把大表划分为大小在 100 到 200MB 的子表（tablet），每�
 | 第 2 层 | 利用一级元数据查找二级元数据表（META 表） |
 | 第 3 层 | 使用二级元数据表查找某表格的子表 tablet 信息 |
 
+![Bigtable 三层定位：Chubby 文件指向根表，根表即一级元数据表，根表的每一行指向元数据表的一个子表，元数据表的每一行再指向用户表 1 到用户表 N 的某个子表](图/6-3_Chubby根表元数据表用户表三层定位.png)
+
+同样的分层在 06 里用一个具体例子画过，主键 1 到 7000 的用户表切成七个子表，由三个 Meta 子表和一个 Root 表索引：
+
+![Root 表指向三个 Meta 子表，Meta 子表再指向七个 User 子表，User 子表依次覆盖主键 1 到 1000 直至 6001 到 7000](图/3-7_顺序分布的Root表Meta表User表.png)
+
 补充几点：
 
 - 位置信息就是服务器 IP 地址。
@@ -253,6 +275,12 @@ $$\text{两级元数据支持的数据量} = 16\text{TB} \times \frac{128\text{M
 
 最后两条容易混。子表之间的行范围是不重叠的（这是顺序分布的定义），但一个子表内部的多个 SSTable 文件是不同时期 dump 出来的，它们的 key 范围会互相覆盖，读的时候要合并。
 
+![一个子表的内部：行范围从 aardvark 到 apple 的 Tablet 由两个 SSTable 组成，每个 SSTable 由若干 64K 的 block 加一个 Index 索引块构成](图/6-4_子表由SSTable组成.png)
+
+![两个相邻子表和 SSTable 的对应关系：aardvark 到 apple 的子表指向三个 SSTable，apple_two_E 到 boat 的子表指向两个 SSTable，中间那个 SSTable 同时被两个子表引用](图/6-4_子表与SSTable的对应关系.png)
+
+第二张图就是"SSTable 可以重叠"的样子：两个子表的行范围首尾相接不重叠，但中间那个 SSTable 被两边共用，这种情况在子表刚分裂、还没做 Compaction 时最常见。
+
 ### LSM 树与 SSTable
 
 这一节和 04 里 LevelDB 那节是同一套内容，课件在第 155 和 162 页重复了两遍。推导链条：
@@ -263,6 +291,8 @@ $$\text{两级元数据支持的数据量} = 16\text{TB} \times \frac{128\text{M
 - key 值有序，解决区间查询性能差
 
 内存中维护有序的数据结构（平衡树）实现 key 值排序功能；内存中数据过大时创建 SSTable 文件写入磁盘完成持久化。
+
+![LSM 树的层次：写入进 MemTable，写满冻结成不可变 MemTable 后转储到磁盘第 0 层，磁盘上的 SSTable 分三层，清单文件记录各层有哪些 .sst，当前文件指向有效的清单文件](图/3-4_LevelDB存储结构.png)
 
 写入路径：先写日志，再写 MemTable。
 
@@ -285,6 +315,10 @@ $$\text{两级元数据支持的数据量} = 16\text{TB} \times \frac{128\text{M
 
 **数据读取**：按照时间顺序合并多个相关 SSTable 记录，返回最终数据结果。
 
+![Merge-dump 写入：左边是按时间顺序往下追加的操作日志，依次是 Insert、Insert、Delete、Insert、Delete、Insert，最新的一条应用到子表 apple_two_E 到 boat 的 Memtable 里，子表下面挂着两个已经转储出去的 SSTable](图/6-4_Merge-dump引擎写入.png)
+
+![子表的读写路径：Write Op 先写 GFS 上的 tablet log，再写内存里的 memtable；Read Op 同时读 memtable 和 GFS 上的多个 SSTable 文件，合并后输出](图/6-4_子表的读写路径.png)
+
 ### 数据分布的实现：两类节点的分工
 
 | 子表服务器 | 主节点 |
@@ -296,7 +330,11 @@ $$\text{两级元数据支持的数据量} = 16\text{TB} \times \frac{128\text{M
 
 ### 子表分配
 
-每个 Tablet 只存储在一个子表服务器上。主节点启动后的动作顺序：
+每个 Tablet 只存储在一个子表服务器上。
+
+![一个 Master 把子表分配给五台 Tablet Server，每台服务器里的深色条块代表它负责的若干子表](图/6-4_Master向Tablet-Server分配子表.png)
+
+主节点启动后的动作顺序：
 
 1. 向 Chubby 申请锁，避免出现多个主节点。
 2. 获取活跃子表服务器信息。
@@ -431,7 +469,11 @@ Bigtable 每个子表的数据分为内存中的 MemTable 和 GFS 中的多个 S
 
 "单副本"指的是服务层：同一时刻一个子表只有一台 Tablet Server 在服务，这台机器挂了就必须等检测加重新加载，期间这部分数据读写不可用。Dynamo 那种多副本都能服务的系统就没有这个空窗期，代价是一致性弱。
 
-### 系统对比表（第 169 页原表，重点）
+### 系统对比表（课件原表，重点）
+
+![Bigtable 表格存储与 Dynamo 键值存储对比表：数据分布、架构、数据模型、接口、存储和一句话概括六行](图/6-8_Bigtable与Dynamo对比.png)
+
+按原表抄成文字：
 
 | | Bigtable 表格存储 | Dynamo 键值存储 |
 | --- | --- | --- |

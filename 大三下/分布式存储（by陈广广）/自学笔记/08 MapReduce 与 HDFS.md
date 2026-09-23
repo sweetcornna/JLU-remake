@@ -31,6 +31,12 @@
 1. 用户指定 Map 程序，处理输入，产生中间结果文件 key/value 对；
 2. 用户指定 Reduce 程序，处理中间结果对，合并中间结果中有相同 key 值的 value 数据，产生输出。
 
+![MapReduce 软件框架：用户只写 Map function 和 Reduce function，输入文件经 Map、数据流、Reduce 到输出文件，MapReduce Library 作为 Controller 通过控制流管理全过程](图/4-3_MapReduce软件框架.png)
+
+虚线以上是抽象层，用户接触的只有 Map 和 Reduce 两个函数，读输入、传数据、调度、写输出都由框架里的 Controller 负责。下面这张图把数据流展开：
+
+![MapReduce 数据流：输入切成若干片，每片交给一个 M 产生 k:v 中间结果，按 key 分组得到 k1:v,v,v,v 到 k5:v，每组交给一个 R 写出输出](图/4-3_MapReduce数据流.png)
+
 ### WordCount 示例
 
 Map：
@@ -59,9 +65,15 @@ reduce(String key, Iterator values):
 
 reduce 函数对特定单词所有已输出的计数求和。
 
+![WordCount 数据流：两行输入 Most people ignore most poetry 和 Most poetry ignores most people，Map 输出十个单词计数对，排序分组后 Reduce 得到 ignore 1、ignores 1、most 4、people 2、poetry 2](图/4-3_WordCount数据流.png)
+
+图左上角的第一行输入被原图裁掉了一半，完整是 Most people ignore most poetry。统计时不区分大小写，所以两行里的 Most 和 most 合起来是 4 次；ignore 和 ignores 是不同的单词，各算 1 次。
+
 ### 分区 Partition
 
 分区（Partition）过程把 Map 任务和 Reduce 任务联系起来。Map 的输出按 key 的哈希值分到若干个分区，同一个 key 的所有中间结果必然落到同一个分区，从而被同一个 Reduce 任务处理。
+
+![分区函数：四个 Map worker 各用 Partitioning function 把输出分成 1、2、3 三个区，所有 worker 的 1 号区都送到 1 号 Reduce worker](图/4-3_分区函数.png)
 
 ### PageRank
 
@@ -71,6 +83,10 @@ PageRank 依据网页之间的链接关系评价网页重要程度。级别从 1
 
 **基本设计思想**：被许多优质网页所链接的网页，多半也是优质网页。一个网页要想拥有较高的 PR 值需要两个条件：有很多网页链接到它；有高质量的网页链接到它。
 
+![PageRank 示例：B 占 38.4%，C 占 34.3%，E 占 8.1%，D 和 F 各 3.9%，A 占 3.3%，五个紫色小页面各 1.6%；C 只有 B 一条入链却排第二](图/4-3_PageRank简化模型示例.png)
+
+这张图同时说明两个条件。B 的入链最多，所以最高；C 只有 B 一条入链，但 B 本身分量大，C 也排到了第二。
+
 **简化模型**
 
 把互联网上各个网页之间的链接关系看成一个有向图。一个网页的影响力等于所有入链集合的页面的加权影响力之和：
@@ -78,6 +94,8 @@ PageRank 依据网页之间的链接关系评价网页重要程度。级别从 1
 $$PR(u) = \sum_{v \in B_u} \frac{PR(v)}{L(v)}$$
 
 其中 $u$ 为待评估的页面， $B_u$ 为页面 $u$ 的入链集合， $L(v)$ 是页面 $v$ 的出链数量。含义是页面 $v$ 把影响力 $PR(v)$ 平均分配给了它的出链，统计所有能给 $u$ 带来链接的页面 $v$，总和就是 $PR(u)$。
+
+![链接结构中的部分网页及 PageRank 值：PR 为 0.1 的页面有两条出链，各传 0.05；PR 为 0.09 的页面有三条出链，各传 0.03；右边两个页面分别收到 0.05 加 0.03 等于 0.08，最下面的页面收到 0.03](图/4-3_链接结构中的部分网页及PR值.png)
 
 两个直觉：
 
@@ -93,7 +111,11 @@ $$H_{ij} = \begin{cases} 1/L_j & \text{if } P_j \in B_i \\ 0 & \text{otherwise} 
 - 非零条件：仅当 $P_j$ 存在指向 $P_i$ 的链接（即 $P_j \in B_i$）。
 - 权重值 $1/L_j$，所有出链等概率跳转。
 
-课件的三页面例子：P1 与 P2 互相链接，P2 还链向 P3，P3 链向 P1。P2 有两个出链，用户访问 P2 时跳到 P1 或 P3 的概率均为 $1/2$。转移矩阵是
+课件的三页面例子：P1 与 P2 互相链接，P2 还链向 P3，P3 链向 P1。P2 有两个出链，用户访问 P2 时跳到 P1 或 P3 的概率均为 $1/2$。
+
+![三页面链接图：P1 与 P2 互链，P2 指向 P3，P3 指向 P1，下方给出超链接矩阵 H，第一行 0、1/2、1，第二行 1、0、0，第三行 0、1/2、0](图/4-3_三页面链接与超链接矩阵H.png)
+
+矩阵按列读：第 j 列是从 $P_j$ 出发跳到各页面的概率，每列之和为 1。转移矩阵是
 
 $$H = \begin{bmatrix} 0 & 1/2 & 1 \\ 1 & 0 & 0 \\ 0 & 1/2 & 0 \end{bmatrix}$$
 
@@ -106,6 +128,10 @@ $$R = HR$$
 数学本质： $R$ 是矩阵 $H$ 的特征向量（eigenvector），对应的特征值（eigenvalue）为 1。
 
 **迭代流程**三步：每个节点从初始值出发，按照出度给其他节点投票；按照入度依次计算其他节点给予的投票值；获得本轮结果。
+
+![PageRank 两轮迭代：五个节点初值都是 0.2，左图标出每条边传递的 PR 量，第一轮后 n1 为 0.066、n2 和 n3 为 0.166、n4 和 n5 为 0.3，第二轮后 n1 为 0.1、n2 为 0.133、n3 为 0.183、n4 为 0.2、n5 为 0.383](图/4-3_PageRank两轮迭代.png)
+
+图中的边是 n1→n2、n1→n4、n2→n3、n2→n5、n3→n4、n4→n5、n5→n1、n5→n2、n5→n3。用 Python 按简化模型迭代两轮，结果是 (0.0667, 0.1667, 0.1667, 0.3, 0.3) 和 (0.1, 0.1333, 0.1833, 0.2, 0.3833)，每轮总和都是 1，和图一致，图里的 0.066、0.166 是截断写法。
 
 对上面那个三页面的矩阵，用 Python 迭代或直接求特征向量，归一化后的稳态解是 $R = (0.4, 0.4, 0.2)$，验算见 [11 典型计算与数值复核.md](<11 典型计算与数值复核.md>)。
 
@@ -180,7 +206,13 @@ class REDUCER
 
 **TeraSort 排序**
 
-课件只给了一张采样树的图，没有文字说明。TeraSort 的思路是先对输入采样，选出 $R-1$ 个分割点把 key 空间切成 $R$ 段，用一棵 Trie 树做快速查找，Map 阶段按分割点把记录送进对应的 Reduce，每个 Reduce 内部排序后直接输出，各 Reduce 输出首尾相接就是全局有序。
+课件只给了下面这张采样树的图，没有文字说明：
+
+![TeraSort 采样树：根节点下分出 a、b、m 三个前缀，a 下接 b，b 下接 c，m 下接 n，叶子方框 1 到 4 是四个分区](图/4-3_TeraSort采样树.png)
+
+图中从根往下读前缀，走到哪个方框就进哪个 Reduce。以 ab 开头的 key 按分割点落到 1 号或 2 号，以 b 开头的落到 2 号或 3 号，以 mn 开头的落到 3 号或 4 号，四个方框从左到右 key 递增。
+
+TeraSort 的思路是先对输入采样，选出 $R-1$ 个分割点把 key 空间切成 $R$ 段，用一棵 Trie 树做快速查找，Map 阶段按分割点把记录送进对应的 Reduce，每个 Reduce 内部排序后直接输出，各 Reduce 输出首尾相接就是全局有序。
 
 ## 4.4 HDFS
 
@@ -200,6 +232,10 @@ HDFS 按主从结构设计：一个单个 NameNode 作为 master，多个 DataNo
 - HDFS 将文件分割成固定大小的块（早期 64MB）
 - 这些块存到工作机 DataNodes 中
 - 元数据（DataNodes 和块的映射）由 NameNode 存储
+
+![HDFS 客户端读数据：1 客户端 open，2 DistributedFileSystem 向 NameNode 取块位置，3 通过 FSDataInputStream read，4 和 5 分别从不同 DataNode 读块，6 close](图/4-4_HDFS客户端读数据.png)
+
+读数据时 NameNode 只提供块的位置，数据本身由客户端直接从 DataNode 读，这和 07 里 GFS 客户端的做法相同。
 
 五个特点：主从集群、文件分片、分布式存储、副本管理、并发性和容错性。
 
@@ -283,6 +319,10 @@ MapReduce 引擎也是主从结构：一个单独的 JobTracker 作为主服务�
 - **JobTracker**：在集群上管理 MapReduce 作业，负责监视作业和分配任务给 TaskTracker，相当于调度器。
 - **TaskTracker**：管理集群上单个计算节点的映射和化简任务的执行，相当于运行环境。
 
+![Hadoop 集群的两层结构：上层 MapReduce 引擎，节点 1 运行 JobTracker，节点 2 到 4 运行 TaskTracker 和若干 map、reduce 槽；下层 HDFS，节点 1 是存元数据的 NameNode，节点 2 到 4 是存块的 DataNode；节点 1、2 在机架 1，节点 3、4 在机架 2](图/4-4_Hadoop的HDFS与MapReduce引擎.png)
+
+图中不同阴影的方框代表不同的功能节点，TaskTracker 和 DataNode 部署在同一台机器上，这是后面数据本地性能成立的前提。
+
 作业和数据的映射关系：
 
 ```
@@ -292,7 +332,27 @@ Input File = Data Block(s)，中间结果也是 Data Block(s)
 
 输入文件在 HDFS 中分片存储（数据块），**每一个 Map 任务处理一个数据块，一一映射**。这条是理解 Data Locality 问题的前提。
 
+![JobTracker 分配任务：用户向 JobTracker 提交作业，JobTracker 与 NameNode 同处主节点，三个 TaskTracker 通过 Heartbeat 汇报并接收任务分配，每个 JVM 插槽运行一个 Map 或 Reduce，Map 读取本机 DataNode 上的块](图/4-4_JobTracker分配任务.png)
+
+一个作业在 Hadoop 上从提交到运行的完整步骤如下：
+
+![Hadoop 运行一个 MapReduce 作业：1 run job，2 向 JobTracker 取新作业 ID，3 把作业资源拷到共享文件系统，4 提交作业，5 初始化作业，6 取输入分片，7 TaskTracker 心跳领取任务，8 取作业资源，9 启动子 JVM，10 运行 MapTask 或 ReduceTask](图/4-4_Hadoop运行一个MapReduce作业.png)
+
+运行中的状态沿相反方向汇报：任务把进度更新报给 TaskTracker，TaskTracker 靠心跳报给 JobTracker，客户端再向 JobTracker 查询作业状态。
+
+![状态更新的传播：MapTask 或 ReduceTask 在进度或计数器变化时 statusUpdate 给 TaskTracker，TaskTracker 通过 heartbeat 报给 JobTracker，JobClient 用 getJobStatus 查询](图/4-4_状态更新的传播.png)
+
 Map 和 Reduce 的完整过程五个阶段：**Map、Sort、Copy、Merge、Reduce**。
+
+![单个 Reduce 任务的数据流：split 0 到 2 各经 map 和 sort，copy 到同一个 reduce 节点 merge 后 reduce，输出 part 0 写入 HDFS 并复制](图/4-4_单个Reduce任务的数据流.png)
+
+有多个 Reduce 时，每个 Map 的输出先按分区切开，再分别 copy 到对应的 Reduce，图中交叉的箭头就是这一步：
+
+![多个 Reduce 任务的数据流：每个 map 的输出排序后分成两个分区，交叉 copy 到两个 reduce，分别输出 part 0 和 part 1](图/4-4_多个Reduce任务的数据流.png)
+
+没有 Reduce 的作业只剩 Map 阶段，每个 Map 的结果直接写成一个输出文件：
+
+![没有 Reduce 任务的数据流：split 0 到 2 各经 map 直接输出 part 0 到 part 2 写入 HDFS](图/4-4_没有Reduce任务的数据流.png)
 
 ## 4.5 Hadoop 中的调度问题
 
@@ -341,6 +401,10 @@ $$\text{Data locality} = \frac{\text{本地化任务数}}{\text{总任务数}}$$
 ### 公平调度的两个问题
 
 实现集群作业间公平调度的简单方法（算法 1）：始终把空闲计算槽位分配给当前运行任务最少的作业。只要 slot 能够很快变为空闲，分配结果就满足最大最小公平原则。
+
+![Algorithm 1 Naive Fair Sharing：节点 n 心跳时若有空闲 slot，把 jobs 按运行任务数递增排序，依次检查，有本地数据的未启动任务就在 n 上启动，否则启动任意未启动任务；红笔批注为按已分配资源递增排序](图/4-5_朴素公平调度算法1.png)
+
+注意内层循环的两个分支：本地任务优先，没有本地任务时也照样启动非本地任务。下面两个问题都出在这个 else 分支上。
 
 **问题 1：Head-of-line Scheduling（队首阻塞）**
 
