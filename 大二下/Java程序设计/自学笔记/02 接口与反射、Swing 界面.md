@@ -17,6 +17,10 @@
 
 写新的 `Ship.java`，编译好放在同一目录下，`java ComputeTime Ship 22 33 44` 就能用，`ComputeTime.class` 一个字节都不用改。
 
+![接口 Instrument 在顶层，Wind、Percussion、Stringed 三个类实现它，Woodwind 和 Brass 再继承 Wind](图/实验三_接口与实现类层次.png)
+
+这张图的结构和本题一一对应：顶上的 `Instrument` 换成 `Common`，下面一排实现类换成 `Plane`、`Car007`，以后的 `Ship` 就是往这一排再加一个框。只跟顶层接口打交道的代码（本题的 `ComputeTime`）不需要知道下面有几个框。图中连线上写的 `implement` 少了一个 s，Java 关键字是 `implements`。
+
 ### 参考代码
 
 `Common.java`：
@@ -232,7 +236,19 @@ Swing 程序的三步是固定的：搭窗口、放组件、挂监听器。
 
 搭窗口靠继承 `JFrame`，`super("ColorPane")` 把字符串传给父类构造方法当窗口标题。`getContentPane()` 拿到的是内容面板，组件都往它上面加。`GridLayout(3, 3, 5, 5)` 是 3 行 3 列、横纵间距各 5 像素的网格布局，加进去的组件按加入顺序从左到右、从上到下填格子，每个格子等大。
 
+![GUI 类层次：Component 派生 Container，Container 往下分出 Panel、Window 两支，Window 再到 Frame，Swing 的 JFrame 继承 Frame，JComponent 也继承 Container；Container 聚合多个 Component 和一个 LayoutManager](图/实验四_GUI组件类层次.png)
+
+沿着图里的继承线往上走，`ColorPane` → `JFrame` → `Frame` → `Window` → `Container`，所以窗口本身就是一个容器。图中 `Container` 下方的实心菱形连到 `Component`，表示一个容器里装多个组件；上方空心菱形连到 `LayoutManager`，旁边标着 1，表示一个容器只用一个布局管理器，`setLayout(grid)` 就是在设置这一个。`JButton` 图上没画，它经 `AbstractButton` 继承 `JComponent`，也是 `Container` 的子孙。
+
+![GridLayout 2 行 3 列、间距 5 的窗口，六个按钮 one 到 six 从左到右、从上到下依次排满，格子之间留着缝隙](图/实验四_GridLayout带间距的网格.png)
+
+上图是课件里 `new GridLayout(2, 3, 5, 5)` 的运行效果，按钮之间那道浅色缝就是 5 像素间距。本题把参数换成 `(3, 3, 5, 5)`，九个颜色按钮按 `names` 数组的顺序排成三行三列，blue 在左上角，yellow 在右下角。
+
 挂监听器靠 `implements ActionListener` 加 `addActionListener(this)`：让窗口类自己充当监听器，每个按钮被点时都调用这个类的 `actionPerformed`。`ActionListener` 只有 `actionPerformed` 一个方法，必须实现它，否则编译不过。
+
+![事件处理模型：按钮是事件源，点击后产生 ActionEvent e，沿箭头交给注册在它上面的 ActionListener，由监听器接收并处理](图/实验四_按钮事件源与监听器.png)
+
+套到本题，图左边的 Button 1 就是九个 `JButton` 中被点的那个，右边的 ActionListener 是 `ColorPane` 对象自己，箭头上的 `ActionEvent e` 就是传进 `actionPerformed(ActionEvent e)` 的参数。九个按钮共用同一个监听器，所以要靠 `e.getSource()` 分辨事件是从哪个按钮来的。
 
 `actionPerformed` 里用 `e.getSource()` 区分是哪个按钮被点了。`getSource()` 返回事件源对象，和 `buttons[i]` 比较用 `==`（比的是同一个对象，不是内容），这里不能用 `equals`。
 
