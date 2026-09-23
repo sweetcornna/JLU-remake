@@ -110,6 +110,10 @@ man 5 passwd    # 指定查第 5 级里的 passwd，即 /etc/passwd 的文件格
 
 ### man 页面里的按键
 
+![man ls 的页面，箭头标出左上角 LS(1) 是命令所在章节，NAME 是命令名称，SYNOPSIS 是用法说明，DESCRIPTION 是功能和选项的详细说明；下方三个色块标出翻页按键：空格后翻一页、b 前翻一页，回车后移一行、k 前移一行，q 退出](图/3_man页面各部分与翻页按键.png)
+
+上图是课件在 CentOS 7 上执行 `man ls` 的截图，页面结构和按键都能在里面对上，按键汇总如下：
+
 | 按键 | 作用 |
 | --- | --- |
 | 空格 | 后翻一页 |
@@ -142,6 +146,8 @@ man 5 passwd    # 指定查第 5 级里的 passwd，即 /etc/passwd 的文件格
 ### shell 的作用
 
 shell 负责用户和 UNIX 系统之间的交互。每输入一个命令并按回车，shell 先分析命令，再执行。
+
+![输入的命令按回车后交给 shell，shell 先分析再执行；下面两栏说明 shell 命令是 shell 程序自带的内部命令，系统工具程序是存在硬盘上、由 shell 查找加载执行的外部命令](图/3-3_shell分析并执行命令.png)
 
 - 一些 UNIX 命令是 shell 程序的一部分，称为内部命令或 shell 命令。
 - 大多数 UNIX 命令程序存储在硬盘上，由 shell 查找、加载并执行，称为外部命令或系统工具程序。
@@ -178,6 +184,10 @@ ls -l /bin/bash   # 普通可执行文件
 csh     # 启动 csh，bash 在后面休眠
 exit    # 退出 csh，回到 bash
 ```
+
+![更改用户 shell 的课件页：方法是在当前 shell 中键入新 shell 名，本质是创建子进程运行新 shell；右侧两个终端框演示在 bash 里输入 csh 后 bash 进入休眠、csh 运行，在 csh 里输入 exit 回到 bash；左侧列出永久改变 shell 的两种办法，修改 /etc/passwd 或使用 chsh](图/3-3_临时换shell的父子进程.png)
+
+图中 bash 那一格的状态字样 running 和 sleeping 叠在了一起，这是课件动画的两帧：键入 `csh` 之前 bash 是 running，键入之后变成 sleeping，下面那格的 csh 才是正在运行的进程。
 
 永久改变有两种方法：
 
